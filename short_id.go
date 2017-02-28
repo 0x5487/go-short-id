@@ -1,10 +1,10 @@
 package shortid
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
-	"fmt"
 	"os"
 	"time"
 )
@@ -27,21 +27,31 @@ func init() {
 	}
 }
 
-func Generate(n int) string {
-	data, _ := generateRandomBytes(n)
-	result := ""
-	for _, b := range data {
-		pick := b % 61
-		result += fmt.Sprintf("%c", _chars[pick])
-	}
-	return result
+type Options struct {
+	Number        int
+	StartWithYear bool
+	EndWithHost   bool
 }
 
-func GenerateWithHost(n int) string {
-	year := time.Now().UTC().Format("06")
-	randCode := Generate(n)
-	result := fmt.Sprintf("%s%s%s", year, randCode, _serverHash)
-	return result
+func Generate(opt Options) string {
+	data, _ := generateRandomBytes(opt.Number)
+
+	var buffer bytes.Buffer
+	if opt.StartWithYear {
+		year := time.Now().UTC().Format("06")
+		buffer.WriteString(year)
+	}
+
+	for _, b := range data {
+		pick := b % 61
+		buffer.WriteRune(_chars[pick])
+	}
+
+	if opt.EndWithHost {
+		buffer.WriteString(_serverHash)
+	}
+
+	return buffer.String()
 }
 
 func sha256hash(text string) string {

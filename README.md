@@ -10,12 +10,13 @@ package main
 import shortid "github.com/jasonsoft/go-short-id"
 
 func main() {
-	id := shortid.GenerateWithHost(8)
-	println(id) // output: 16WepJgUodgz
-
-	// you can also generate a random string only
-	id = shortid.Generate(10)
-	println(id) // output: cjgQOfguh1
+	opt := Options{
+		Number:        14,
+		StartWithYear: true,
+		EndWithHost:   false,
+	}
+	id := shortid.Generate(opt)
+	println(id) // output: 17GuOMTTeMKZQpxZ
 }
 ```
 
