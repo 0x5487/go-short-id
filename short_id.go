@@ -5,13 +5,24 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"fmt"
 	"os"
+	"strconv"
 	"time"
+
+	redis "github.com/go-redis/redis"
 )
 
-const all = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
+const (
+	all           = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
+	timeFormat    = "060102"
+	numberFormat  = "%08d"
+	counterPrefix = "counter:"
+	expireTime    = time.Hour * 48
+)
 
 var (
+	_client     *redis.Client
 	_serverHash string
 	_chars      = [62]rune{}
 )
@@ -72,4 +83,34 @@ func generateRandomBytes(n int) ([]byte, error) {
 		return nil, err
 	}
 	return b, nil
+}
+
+//RedisConfig the configuration of redis
+type RedisConfig redis.Options
+
+//SetRedis setting the counter redis
+func SetRedis(opt RedisConfig) {
+	rOpt := redis.Options(opt)
+	_client = redis.NewClient(&rOpt)
+}
+
+//GetCounter get the date serial number return int 64 (Example: 170817000000001)
+// It will return an error if the redis error
+func GetCounter(prefixStr string) (int64, error) {
+	timeStr := time.Now().UTC().Format(timeFormat)
+	rKey := counterPrefix + prefixStr + ":" + timeStr
+	result, err := _client.Incr(rKey).Result()
+	if err != nil {
+		return -1, err
+	}
+	if result == 1 {
+		_client.Expire(rKey, expireTime)
+	}
+	timeStr += numberFormat
+	idStr := fmt.Sprintf(timeStr, result)
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		return -1, err
+	}
+	return id, nil
 }

@@ -54,3 +54,17 @@ func TestSimple(t *testing.T) {
 	}
 
 }
+
+func TestCounter(t *testing.T) {
+	cfg := RedisConfig{
+		Addr:     "127.0.0.1:6379",
+		DB:       2,
+		Password: "password",
+	}
+	SetRedis(cfg)
+	for i := 0; i < 10; i++ {
+		result, _ := GetCounter("bbin")
+		println(result)
+	}
+
+}
